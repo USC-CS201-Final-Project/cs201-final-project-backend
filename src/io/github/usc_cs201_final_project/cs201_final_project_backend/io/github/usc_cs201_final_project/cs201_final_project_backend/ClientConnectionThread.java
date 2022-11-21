@@ -40,9 +40,8 @@ public class ClientConnectionThread extends Thread {
 		
 		try{
 			while(true) {
-				@SuppressWarnings("unused")
 				String line = br.readLine();
-				//manager.broadcastStart();
+				manager.sendPacket(line);
 			}
 		}
 		catch(IOException ioe) {
@@ -58,16 +57,13 @@ public class ClientConnectionThread extends Thread {
 	 * @throws JsonIOException 
 	 */
 	public void sendStart(List<String> usernames, int startBossHP, List<String> words,
-			List<Integer> costumeIDs, int bossCostume) throws JsonIOException, IOException {
+			List<Integer> costumeIDs) throws JsonIOException, IOException {
 		
-		StartPacket startpacket = new StartPacket(usernames, startBossHP, words, costumeIDs, bossCostume);
+		//create a start packet object
+		StartPacket startpacket = new StartPacket(usernames, startBossHP, words, costumeIDs);
 		
-		Gson gson = new GsonBuilder()
-				  .setPrettyPrinting()
-				  .create();
-		
-		String filePath = "startpacket";
-		gson.toJson(startpacket, new FileWriter(filePath));
+		//use send packet to send the startpacket json to the client
+		sendPacket(new Gson().toJson(startpacket));
 		
 	}
 	
@@ -78,7 +74,28 @@ public class ClientConnectionThread extends Thread {
 		pw.flush();
 	}
 
+	public void sendCostumeChange(int playerID, int costumeID)
+	{
+		
+	}
+
+	public void playerAttack(int playerID, String newWord, int bossHP)
+	{
+		
+	}
+	
 	public Player getPlayer() {
 		return player;
+	}
+	
+	public void sendAuthentication(boolean isValid)
+	{
+		
+	}
+	
+	public void sendPacket(String packet) {
+		//send the packet to all the client by printing it serially
+		pw.println(packet);
+		pw.flush();
 	}
 }

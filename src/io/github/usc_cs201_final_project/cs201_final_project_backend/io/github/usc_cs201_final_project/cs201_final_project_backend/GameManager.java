@@ -14,9 +14,10 @@ public class GameManager extends Thread{
 	private long startTime;
 	private int numAttacks = 0;
 	
-	static int maxBossHealth = 100;
-	static int numBosses = 3;
 	
+	private static int maxBossHealth = 100; 
+	private static int numBosses = 3;
+	private static int damage = 10;
 	GameManager(ArrayList<ClientConnectionThread> clients, DatabaseManager db) throws JsonIOException, IOException {
 		//network managers passes the client threads
 		this.clients = clients;
@@ -34,7 +35,7 @@ public class GameManager extends Thread{
 		
 		//do bosses even need a costume ID?
 		//generates a boss id from 0 to numBosses-1
-		boss = new Boss(maxBossHealth, 0, rand.nextInt(numBosses));
+		boss = new Boss(maxBossHealth, 0); // *edit* got rid of third parameter
 		
 		List<String> usernames = new ArrayList<String>();
 		List<String> words = new ArrayList<String>();
@@ -63,8 +64,6 @@ public class GameManager extends Thread{
 					client.sendBossAttack();
 				}
 			}
-			
-			//also check for game-play packets
 		}
 	}
 	
@@ -72,15 +71,59 @@ public class GameManager extends Thread{
 		
 		//sends the same gameStart packet to each client
 		for(ClientConnectionThread client : clients) {
-			client.sendStart(usernames, boss.getMaxHealth(), words, costumes, boss.getId());
+			client.sendStart(usernames, boss.getMaxHealth(), words, costumes); //*edited*
 		}
 	}
 	
-	public void updateCostume(int clientID, String username) {
-		
+	public void updateCostume(int clientID, String username, int costumeID) {
+		databaseManager.changeCostumeID(username, costumeID);
+		for(ClientConnectionThread client : clients) {
+			client.sendCostumeChange(clientID, costumeID);
+		}
 	}
 	
 	public void completedWord(int clientID, String username) {
 		
+		String word = databaseManager.getWord();
+		boss.takeDamage(damage);
+		for(ClientConnectionThread client : clients) {
+			client.playerAttack(clientID, word, boss.getCurrentHealth());
+		}
+	}
+	
+	public void sendPacket(String packet) {
+		for(ClientConnectionThread client : clients) {
+			client.sendPacket(packet);
+		}
+	}
+	
+	//called by clientConnectionThread when creating new acc, checks if username exists, if it does return false
+	//if not creates account
+	//returns value "isValid" for server authentication packet
+	public boolean createUser(String username, String password)
+	{
+		if (databaseManager.userExists(username))
+		{
+			return false;
+		}
+		else
+		{
+			databaseManager.createUser(username, password);
+			return true;
+		}
+		
+	}
+	
+	public boolean authenticateUser(String username, String password)
+	{
+		if(databaseManager.userExists(username))
+		{
+			databaseManager.authenticateUser(username, password);
+			return true;
+		}
+		else
+		{
+			return false;
+		}
 	}
 }
