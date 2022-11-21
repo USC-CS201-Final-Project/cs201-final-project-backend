@@ -76,12 +76,14 @@ public class ClientConnectionThread extends Thread {
 
 	public void sendCostumeChange(int playerID, int costumeID)
 	{
-		
+		SendCostumeChange sendCostumeChangePacket = new SendCostumeChange(playerID, costumeID);
+		sendPacket(new Gson().toJson(sendCostumeChangePacket));
 	}
 
 	public void playerAttack(int playerID, String newWord, int bossHP)
 	{
-		
+		PlayerAttack playerAttackPacket = new PlayerAttack(playerID, newWord, bossHP);
+		sendPacket(new Gson().toJson(playerAttackPacket));
 	}
 	
 	public Player getPlayer() {
