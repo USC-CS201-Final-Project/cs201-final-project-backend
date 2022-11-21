@@ -18,15 +18,30 @@ public class ClientConnectionThread extends Thread {
 	 * sends it to stream
 	 */
 	public void sendStart(List<String> usernames, int startBossHP, List<String> words,
-			List<Integer> costumeIDs, int bossCostume) {
+			List<Integer> costumeIDs) {
 		
 	}
 	public void sendBossAttack()
 	{
 		//send a message that shows that a boss is attacking
 	}
+	
+	public void sendCostumeChange(int playerID, int costumeID)
+	{
+		
+	}
 
+	public void playerAttack(int playerID, String newWord, int bossHP)
+	{
+		
+	}
+	
 	public Player getPlayer() {
 		return player;
+	}
+	
+	public void sendAuthentication(boolean isValid)
+	{
+		
 	}
 }

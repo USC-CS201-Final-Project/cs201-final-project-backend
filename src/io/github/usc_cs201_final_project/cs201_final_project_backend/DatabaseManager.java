@@ -9,6 +9,7 @@ public class DatabaseManager {
 	 * Returns a randomly generated word from the word list
 	 * @return
 	 */
+	//added these functions if you could implement
 	public String getWord() {
 		return "hello";
 	}
@@ -22,4 +23,24 @@ public class DatabaseManager {
 	public Integer getCostumeID(String username) {
 		return 0;
 	}
+	
+	public void changeCostumeID(String username, int costumeID)
+	{
+		
+	}
+	
+	public boolean userExists(String user)
+	{
+		return false;
+	}
+	public boolean authenticateUser(String user, String password)
+	{
+		
+		return false;
+	}
+	public void createUser(String user, String password)
+	{
+		
+	}
+
 }
