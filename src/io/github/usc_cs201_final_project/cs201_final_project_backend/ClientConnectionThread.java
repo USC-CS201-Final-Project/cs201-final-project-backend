@@ -1,13 +1,16 @@
 package io.github.usc_cs201_final_project.cs201_final_project_backend;
 
 import java.util.List;
+import java.net.Socket;
 
 public class ClientConnectionThread extends Thread {
 	private Player player;
 	private int clientID;
+	private Socket socket;
 	
-	public ClientConnectionThread(int clientID) {
+	public ClientConnectionThread(Socket s, int clientID) {
 		this.clientID = clientID;
+		this.socket = s;
 	}
 	
 	@Override

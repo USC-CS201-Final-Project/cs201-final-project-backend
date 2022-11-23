@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-public class GameManager extends Thread{
+public class GameManager extends Thread {
 	private Boss boss;
 	private ArrayList<ClientConnectionThread> clients;
 	private DatabaseManager databaseManager;
@@ -116,5 +116,9 @@ public class GameManager extends Thread{
 		{
 			return false;
 		}
+	}
+	
+	public Iterable<ClientConnectionThread> getClients() {
+		return clients;
 	}
 }
