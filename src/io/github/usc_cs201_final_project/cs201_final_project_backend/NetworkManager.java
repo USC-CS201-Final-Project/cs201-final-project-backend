@@ -11,11 +11,16 @@ public class NetworkManager {
 	private ArrayList<ClientConnectionThread> connections;
 	private LinkedList<ClientConnectionThread> queue;
 	private ServerSocket serverSocket;
+	private static DatabaseManager db;
+	private static int clientCount = 0;
 
 	private ArrayList<GameManager> currentGames;
 	
 	public static void main(String[] args) {
 		System.out.println("Hello, world!");
+
+		db = new DatabaseManager();
+		
 		NetworkManager n;
 		try {
 			n = new NetworkManager();
@@ -55,7 +60,8 @@ public class NetworkManager {
 	}
 	
 	public void awaitClient() throws IOException {
-		ClientConnectionThread cli = new ClientConnectionThread(serverSocket.accept());
+		ClientConnectionThread cli = new ClientConnectionThread(serverSocket.accept(), clientCount);
+		clientCount++;
 		connections.add(cli);
 		queue.add(cli);
 	}
@@ -63,7 +69,7 @@ public class NetworkManager {
 	public void startNextGame() {
 		ArrayList<ClientConnectionThread> players = new ArrayList<>();
 		while (players.size() < PLAYERS_PER_GAME && ! queue.isEmpty()) players.add(queue.poll());
-		GameManager game = new GameManager(players);
+		GameManager game = new GameManager(players, db);
 		game.startGame();
 		currentGames.add(game);
 	}
