@@ -1,8 +1,11 @@
 package io.github.usc_cs201_final_project.cs201_final_project_backend;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+
+import com.google.gson.JsonIOException;
 
 public class GameManager extends Thread {
 	private Boss boss;
@@ -15,7 +18,7 @@ public class GameManager extends Thread {
 	private static int maxBossHealth = 100;
 	private static int numBosses = 3;
 	private static int damage = 10;
-	GameManager(ArrayList<ClientConnectionThread> clients, DatabaseManager db) {
+	GameManager(ArrayList<ClientConnectionThread> clients, DatabaseManager db) throws JsonIOException, IOException {
 		//network managers passes the client threads
 		this.clients = clients;
 		this.databaseManager = db;
@@ -27,7 +30,7 @@ public class GameManager extends Thread {
 	 * initializes startTime and generates a boss
 	 * creates and broadcasts GameStart packet
 	 */
-	public void startGame() {
+	public void startGame() throws JsonIOException, IOException {
 		Random rand = new Random();
 		
 		//do bosses even need a costume ID?
@@ -64,7 +67,7 @@ public class GameManager extends Thread {
 		}
 	}
 	
-	public void broadcastStart(List<String> usernames, List<String> words, List<Integer> costumes) {
+	public void broadcastStart(List<String> usernames, List<String> words, List<Integer> costumes) throws JsonIOException, IOException {
 		
 		//sends the same gameStart packet to each client
 		for(ClientConnectionThread client : clients) {
@@ -121,4 +124,6 @@ public class GameManager extends Thread {
 	public Iterable<ClientConnectionThread> getClients() {
 		return clients;
 	}
+	
+	/*Perhaps add a send packet method in correspondence to the one created in the client connection thread?*/
 }
