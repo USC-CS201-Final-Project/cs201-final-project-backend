@@ -72,7 +72,7 @@ public class NetworkManager {
 	public void startNextGame() throws IOException {
 		ArrayList<ClientConnectionThread> players = new ArrayList<>();
 		while (players.size() < PLAYERS_PER_GAME && ! queue.isEmpty()) players.add(queue.poll());
-		GameManager game = new GameManager(players, db);
+		GameManager game = new GameManager(players, db, this);
 		game.startGame();
 		currentGames.add(game);
 	}
@@ -80,6 +80,36 @@ public class NetworkManager {
 	public void removeGame(GameManager gm) {
 		if (! currentGames.remove(gm)) System.out.println("[ERROR] Could not find game in list of current games!");
 		for (ClientConnectionThread c : gm.getClients()) queue.add(c);
+	}
+	
+	//called by clientConnectionThread when creating new acc, checks if username exists, if it does return false
+	//if not creates account
+	//returns value "isValid" for server authentication packet
+	public static boolean createUser(String username, String password)
+	{
+		if (db.userExists(username))
+		{
+			return false;
+		}
+		else
+		{
+			db.createUser(username, password);
+			return true;
+		}
+		
+	}
+	
+	public static boolean authenticateUser(String username, String password)
+	{
+		if(db.userExists(username))
+		{
+			db.authenticateUser(username, password);
+			return true;
+		}
+		else
+		{
+			return false;
+		}
 	}
 	
 	public static synchronized DatabaseManager getDBManager() {

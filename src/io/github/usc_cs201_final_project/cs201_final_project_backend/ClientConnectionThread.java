@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.google.gson.Gson;
@@ -22,6 +23,9 @@ public class ClientConnectionThread extends Thread {
 	@SuppressWarnings("unused")
 	private GameManager manager;
 	private Player player;
+	private int clientID;
+	private Gson gson = new Gson();
+	private int wordsTyped = 0;
 	
 	private ClientState clientState;
 	
@@ -33,11 +37,17 @@ public class ClientConnectionThread extends Thread {
 		br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
 	}
 	
-	public void setGame(GameManager manager) {
+	public void setGame(GameManager manager, int clientID) {
 		this.manager = manager;
+		this.clientID = clientID;
 		this.clientState = ClientState.InGame;
 	}
 	
+	/**
+	 * notes: I moved the authentication methods to networkManager, so use those
+	 * when we receive a completedWord packet, increment wordsTyped and call manager.completedWord()
+	 * all other functions that do the work is in GameManager
+	 */
 	public void run() {
 		try {
 			while (true) {
@@ -48,37 +58,46 @@ public class ClientConnectionThread extends Thread {
 		}
 		catch (IOException ioe) {
 			System.out.println("ioe in ServerThread.run(): " + ioe.getMessage());
+			//remove this thread from NetworkManager(or game manager?) if connection drops
 		}
 	}
 	
 	public void sendAuthentication(boolean isValid) {
-		//TODO Send packet and update ClientState if necessary.
+		sendPacketObject(new ServerAuthenticationPacket(isValid));
+		
+		if(isValid) {
+			clientState = ClientState.Loading;
+		}
 	}
 	
 	public void sendGameOverPacket(int wpm) {
-		//TODO Send packet and update ClientState if necessary.
+		sendPacketObject(new ServerGameOverPacket(wpm));
+		
+		clientState = ClientState.PostGame;	
 	}
 	
 	public void sendBossAttackPacket() {
-		//TODO Send packet and update ClientState if necessary.
+		//only thing entries that are important are packet id and playerHealth, everything else should be ignored
+		//packetID 0 means BossAttack
+		sendPacketObject(new ServerGameplayPacket(0, -1, player.getCurrentHealth(), "", -1, new ArrayList<Integer>()));
+		
 	}
 	
-	public void sendCostumeChangePacket(int[] costumeIDs) {
-		//TODO Verify complete
-		sendPacketObject(new ServerGameplayPacket(1, -1, -1, "", -1, costumeIDs));
+	public void sendCostumeChangePacket(List<Integer> costumeIDs) {
+		//packet ID 1 means CostumeChange
+		//only requires costumeIDs and (maybe) clientID
+		sendPacketObject(new ServerGameplayPacket(1, -1, -1, "", clientID, costumeIDs));
 	}
 	
-	public void sendPlayerAttackPacket(int bossHP, String newWord, int playerID) {
-		//TODO Verify complete
-		sendPacketObject(new ServerGameplayPacket(2, bossHP, -1, newWord, playerID, new int[0]));
+	public void sendPlayerAttackPacket(int bossHP, String newWord) {
+		//packet ID 2 means playerAttack
+		//only requires bossHP, newWord, and playerID
+		sendPacketObject(new ServerGameplayPacket(2, bossHP, -1, newWord, clientID, new ArrayList<Integer>()));
 	}
 	
-	public void sendGameStartPacket() {
-		//TODO Send packet and update ClientState if necessary.
-	}
-	
-	public void sendGameOverPacket() {
-		//TODO Send packet and update ClientState if necessary.
+	public void sendGameStartPacket(List<String> usernames, int bossHP, List<String> words, List<Integer> costumes) {
+		//last arg is boss costume id, not sure if still needed
+		sendPacketObject(new ServerGameStartPacket(usernames, player.getMaxHealth(), bossHP, words, costumes, 0)); 
 	}
 
 	public Player getPlayer() {
@@ -96,6 +115,10 @@ public class ClientConnectionThread extends Thread {
 		pw.flush();
 	}
 	
+	public int getWordsTyped() {
+		return wordsTyped;
+	}
+
 	private enum ClientState {
 		Authenticating,
 		Loading,

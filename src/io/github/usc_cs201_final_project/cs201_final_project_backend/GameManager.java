@@ -10,18 +10,24 @@ import com.google.gson.JsonIOException;
 public class GameManager extends Thread {
 	private Boss boss;
 	private ArrayList<ClientConnectionThread> clients;
+	private List<Integer> costumes = new ArrayList<Integer>();
+
 	private DatabaseManager databaseManager;
+	private NetworkManager networkManager;
 	private long startTime;
 	private int numAttacks = 0;
-	
+	private boolean gameOver = false;
 	
 	private static int maxBossHealth = 100;
 	private static int numBosses = 3;
-	private static int damage = 10;
-	GameManager(ArrayList<ClientConnectionThread> clients, DatabaseManager db) throws JsonIOException, IOException {
+	private static int playerAttackDamage = 10;
+	private static int bossAttackDamage = 5;
+	
+	GameManager(ArrayList<ClientConnectionThread> clients, DatabaseManager db, NetworkManager nm) throws JsonIOException, IOException {
 		//network managers passes the client threads
 		this.clients = clients;
 		this.databaseManager = db;
+		this.networkManager = nm;
 		startGame();
 		this.run();
 	}
@@ -39,13 +45,13 @@ public class GameManager extends Thread {
 		
 		List<String> usernames = new ArrayList<String>();
 		List<String> words = new ArrayList<String>();
-		List<Integer> costumes = new ArrayList<Integer>();
 		
 		//collects all usernames from the client threads
 		//picks a randomly generated word from database for player to start with
+		int i = 0;
 		for(ClientConnectionThread client : clients) {
-			
-			client.setGame(this);
+			client.setGame(this, i);
+			i++;
 			usernames.add(client.getPlayer().getUsername());
 			words.add(databaseManager.getWord());
 			costumes.add(client.getPlayer().getCostumeID());
@@ -57,70 +63,57 @@ public class GameManager extends Thread {
 	
 	public void run() {
 		//every 5 seconds send a boss attack (-12 hp)
-		while(true)
+		while(!gameOver)
 		{
 			//every five seconds boss attack
 			if ((System.currentTimeMillis() - startTime) > (numAttacks + 1)*(5000))
 			{
 				for(ClientConnectionThread client : clients) {
-					client.sendBossAttack();
+					client.getPlayer().takeDamage(bossAttackDamage);
+					client.sendBossAttackPacket();
+					
+					//if player health reaches 0, they lose, and game is over
+					if(client.getPlayer().getCurrentHealth() <= 0) {
+						gameOver = true;
+					}
 				}
 			}
 		}
-		//TODO Check for game end (player healths) and send end game packet
+		//send end game packet
+		int timeElapsed = (int) (System.currentTimeMillis() - startTime) / 1000;
+		for(ClientConnectionThread client : clients) {
+			client.sendGameOverPacket(client.getWordsTyped()/timeElapsed);
+		}
+		networkManager.removeGame(this);	
 	}
 	
 	public void broadcastStart(List<String> usernames, List<String> words, List<Integer> costumes) throws JsonIOException, IOException {
 		
 		//sends the same gameStart packet to each client
 		for(ClientConnectionThread client : clients) {
-			client.sendStart(usernames, boss.getMaxHealth(), words, costumes); //*edited*
+			client.sendGameStartPacket(usernames, boss.getMaxHealth(), words, costumes); //*edited*
 		}
 	}
 	
 	public void updateCostume(int clientID, String username, int costumeID) {
 		databaseManager.changeCostumeID(username, costumeID);
+		costumes.set(clientID, costumeID);
+		
 		for(ClientConnectionThread client : clients) {
-			client.sendCostumeChange(clientID, costumeID);
+			client.sendCostumeChangePacket(costumes);
 		}
 	}
 	
 	public void completedWord(int clientID, String username) {
 		
 		String word = databaseManager.getWord();
-		boss.takeDamage(damage);
+		boss.takeDamage(playerAttackDamage);
 		for(ClientConnectionThread client : clients) {
-			client.playerAttack(clientID, word, boss.getCurrentHealth());
+			client.sendPlayerAttackPacket(boss.getCurrentHealth(), word);
 		}
-	}
-	
-	//called by clientConnectionThread when creating new acc, checks if username exists, if it does return false
-	//if not creates account
-	//returns value "isValid" for server authentication packet
-	public boolean createUser(String username, String password)
-	{
-		if (databaseManager.userExists(username))
-		{
-			return false;
-		}
-		else
-		{
-			databaseManager.createUser(username, password);
-			return true;
-		}
-		
-	}
-	
-	public boolean authenticateUser(String username, String password)
-	{
-		if(databaseManager.userExists(username))
-		{
-			databaseManager.authenticateUser(username, password);
-			return true;
-		}
-		else
-		{
-			return false;
+		//if player attack kills boss, game is over
+		if(boss.getCurrentHealth() <= 0) {
+			gameOver = true;
 		}
 	}
 	
