@@ -10,6 +10,7 @@ import java.util.List;
 import com.google.gson.Gson;
 import com.google.gson.JsonIOException;
 
+import io.github.usc_cs201_final_project.cs201_final_project_backend.packets.*;
 
 public class ClientConnectionThread extends Thread {
 	
@@ -24,14 +25,20 @@ public class ClientConnectionThread extends Thread {
 	@SuppressWarnings("unused")
 	private int clientID;
 	
-	public ClientConnectionThread(Socket connection, GameManager manager, Player player, int clientID) throws IOException {
+	private ClientState clientState;
+	
+	public ClientConnectionThread(Socket connection, int clientID) throws IOException {
 		this.connection = connection;
-		this.manager = manager;
-		this.player = player;
 		this.clientID = clientID;
+		this.clientState = ClientState.Authenticating;
 		
 		pw = new PrintWriter(connection.getOutputStream());
 		br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+	}
+	
+	public void setGame(GameManager manager) {
+		this.manager = manager;
+		this.clientState = ClientState.InGame;
 	}
 	
 	public void run() {
@@ -40,6 +47,7 @@ public class ClientConnectionThread extends Thread {
 			while(true) {
 				String line = br.readLine();
 				manager.sendPacket(line);
+				//TODO Instantiate player
 			}
 		}
 		catch(IOException ioe) {
@@ -47,6 +55,8 @@ public class ClientConnectionThread extends Thread {
 		}
 		
 	}
+	
+	
 	
 	/**
 	 * Creates a Server gameStart packet and serializes it
@@ -58,11 +68,15 @@ public class ClientConnectionThread extends Thread {
 			List<Integer> costumeIDs) throws JsonIOException, IOException {
 		
 		//create a start packet object
-		StartPacket startpacket = new StartPacket(usernames, startBossHP, words, costumeIDs);
+		ServerGameStartPacket startpacket = new ServerGameStartPacket(usernames, startBossHP, words, costumeIDs);
 		
 		//use send packet to send the startpacket json to the client
 		sendPacket(new Gson().toJson(startpacket));
-		
+	}
+	
+	public void sendGameOverPacket(int wpm) {
+		//TODO
+		clientState = ClientState.PostGame;
 	}
 	
 	public void sendBossAttack()
@@ -74,13 +88,13 @@ public class ClientConnectionThread extends Thread {
 
 	public void sendCostumeChange(int playerID, int costumeID)
 	{
-		SendCostumeChange sendCostumeChangePacket = new SendCostumeChange(playerID, costumeID);
+		ClientAuthenticationPacket sendCostumeChangePacket = new ClientAuthenticationPacket(playerID, costumeID);
 		sendPacket(new Gson().toJson(sendCostumeChangePacket));
 	}
 
 	public void playerAttack(int playerID, String newWord, int bossHP)
 	{
-		PlayerAttack playerAttackPacket = new PlayerAttack(playerID, newWord, bossHP);
+		ServerGameplayPacket playerAttackPacket = new ServerGameplayPacket(playerID, newWord, bossHP);
 		sendPacket(new Gson().toJson(playerAttackPacket));
 	}
 	
@@ -90,12 +104,20 @@ public class ClientConnectionThread extends Thread {
 	
 	public void sendAuthentication(boolean isValid)
 	{
-		
+		//Send authentication results to front end
+		if (isValid) clientState = ClientState.Loading;
 	}
 	
 	public void sendPacket(String packet) {
 		//send the packet to all the client by printing it serially
 		pw.println(packet);
 		pw.flush();
+	}
+	
+	private enum ClientState {
+		Authenticating,
+		Loading,
+		InGame,
+		PostGame
 	}
 }

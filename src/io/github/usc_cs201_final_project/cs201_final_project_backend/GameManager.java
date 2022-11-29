@@ -44,6 +44,8 @@ public class GameManager extends Thread {
 		//collects all usernames from the client threads
 		//picks a randomly generated word from database for player to start with
 		for(ClientConnectionThread client : clients) {
+			
+			client.setGame(this);
 			usernames.add(client.getPlayer().getUsername());
 			words.add(databaseManager.getWord());
 			costumes.add(client.getPlayer().getCostumeID());
@@ -65,6 +67,7 @@ public class GameManager extends Thread {
 				}
 			}
 		}
+		//TODO Check for game end (player healths) and send end game packet
 	}
 	
 	public void broadcastStart(List<String> usernames, List<String> words, List<Integer> costumes) throws JsonIOException, IOException {
@@ -125,5 +128,7 @@ public class GameManager extends Thread {
 		return clients;
 	}
 	
-	/*Perhaps add a send packet method in correspondence to the one created in the client connection thread?*/
+	public void sendPacket(String s) {
+		for (ClientConnectionThread c : clients) c.sendPacket(s);
+	}
 }

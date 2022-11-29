@@ -9,6 +9,7 @@ import java.util.Random;
 
 
 public class DatabaseManager {
+	
 	public Connection conn = null;
 	public Statement st = null;
 	public ResultSet rs = null;
