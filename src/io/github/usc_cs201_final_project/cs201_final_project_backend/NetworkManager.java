@@ -4,22 +4,26 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.*;
 
+import com.google.gson.Gson;
+
 public class NetworkManager {
 	public static final int PLAYERS_PER_GAME = 4;
 	public static final int PORT_NUMBER = 20100;
 	
+	private static DatabaseManager db;
+	private static Gson gson;
+	
+	private ArrayList<GameManager> currentGames;
 	private ArrayList<ClientConnectionThread> connections;
 	private LinkedList<ClientConnectionThread> queue;
 	private ServerSocket serverSocket;
-	public static DatabaseManager db;
-	private static int clientCount = 0;
 
-	private ArrayList<GameManager> currentGames;
 	
 	public static void main(String[] args) {
 		System.out.println("Hello, world!");
 
 		db = new DatabaseManager();
+		gson = new Gson();
 		
 		NetworkManager n;
 		try {
@@ -60,8 +64,7 @@ public class NetworkManager {
 	}
 	
 	public void awaitClient() throws IOException {
-		ClientConnectionThread cli = new ClientConnectionThread(serverSocket.accept(), clientCount);
-		clientCount++;
+		ClientConnectionThread cli = new ClientConnectionThread(serverSocket.accept());
 		connections.add(cli);
 		queue.add(cli);
 	}
@@ -79,4 +82,11 @@ public class NetworkManager {
 		for (ClientConnectionThread c : gm.getClients()) queue.add(c);
 	}
 	
+	public static synchronized DatabaseManager getDBManager() {
+		return db;
+	}
+	
+	public static synchronized String toJsonString(Object o) {
+		return gson.toJson(o);
+	}
 }

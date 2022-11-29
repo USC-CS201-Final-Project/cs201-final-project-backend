@@ -22,14 +22,11 @@ public class ClientConnectionThread extends Thread {
 	@SuppressWarnings("unused")
 	private GameManager manager;
 	private Player player;
-	@SuppressWarnings("unused")
-	private int clientID;
 	
 	private ClientState clientState;
 	
-	public ClientConnectionThread(Socket connection, int clientID) throws IOException {
+	public ClientConnectionThread(Socket connection) throws IOException {
 		this.connection = connection;
-		this.clientID = clientID;
 		this.clientState = ClientState.Authenticating;
 		
 		pw = new PrintWriter(connection.getOutputStream());
@@ -42,75 +39,60 @@ public class ClientConnectionThread extends Thread {
 	}
 	
 	public void run() {
-		
-		try{
-			while(true) {
+		try {
+			while (true) {
 				String line = br.readLine();
 				manager.sendPacket(line);
-				//TODO Instantiate player
+				//TODO Instantiate player, process inputs. Joseph will handle this.
 			}
 		}
-		catch(IOException ioe) {
+		catch (IOException ioe) {
 			System.out.println("ioe in ServerThread.run(): " + ioe.getMessage());
 		}
-		
 	}
 	
-	
-	
-	/**
-	 * Creates a Server gameStart packet and serializes it
-	 * sends it to stream
-	 * @throws IOException 
-	 * @throws JsonIOException 
-	 */
-	public void sendStart(List<String> usernames, int startBossHP, List<String> words,
-			List<Integer> costumeIDs) throws JsonIOException, IOException {
-		
-		//create a start packet object
-		ServerGameStartPacket startpacket = new ServerGameStartPacket(usernames, startBossHP, words, costumeIDs);
-		
-		//use send packet to send the startpacket json to the client
-		sendPacket(new Gson().toJson(startpacket));
+	public void sendAuthentication(boolean isValid) {
+		//TODO
 	}
 	
 	public void sendGameOverPacket(int wpm) {
 		//TODO
-		clientState = ClientState.PostGame;
 	}
 	
-	public void sendBossAttack()
-	{
-		//send a message that shows that a boss is attacking
-		pw.println("Boss is Attacking!");
-		pw.flush();
-	}
-
-	public void sendCostumeChange(int playerID, int costumeID)
-	{
-		ClientAuthenticationPacket sendCostumeChangePacket = new ClientAuthenticationPacket(playerID, costumeID);
-		sendPacket(new Gson().toJson(sendCostumeChangePacket));
-	}
-
-	public void playerAttack(int playerID, String newWord, int bossHP)
-	{
-		ServerGameplayPacket playerAttackPacket = new ServerGameplayPacket(playerID, newWord, bossHP);
-		sendPacket(new Gson().toJson(playerAttackPacket));
+	public void sendBossAttackPacket() {
+		//TODO
 	}
 	
+	public void sendCostumeChangePacket(int[] costumeIDs) {
+		//TODO Verify complete
+		sendPacketObject(new ServerGameplayPacket(1, -1, -1, "", -1, costumeIDs));
+	}
+	
+	public void sendPlayerAttackPacket(int bossHP, String newWord, int playerID) {
+		//TODO Verify complete
+		sendPacketObject(new ServerGameplayPacket(2, bossHP, -1, newWord, playerID, new int[0]));
+	}
+	
+	public void sendGameStartPacket() {
+		//TODO
+	}
+	
+	public void sendGameOverPacket() {
+		//TODO
+	}
+
 	public Player getPlayer() {
 		return player;
 	}
 	
-	public void sendAuthentication(boolean isValid)
-	{
-		//Send authentication results to front end
-		if (isValid) clientState = ClientState.Loading;
+
+	public void sendPacket(String packet) {
+		pw.println(packet);
+		pw.flush();
 	}
 	
-	public void sendPacket(String packet) {
-		//send the packet to all the client by printing it serially
-		pw.println(packet);
+	public void sendPacketObject(Object o) {
+		pw.println(NetworkManager.toJsonString(o));
 		pw.flush();
 	}
 	
