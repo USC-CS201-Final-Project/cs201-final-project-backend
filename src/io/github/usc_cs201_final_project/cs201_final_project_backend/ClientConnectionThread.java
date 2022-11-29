@@ -52,15 +52,15 @@ public class ClientConnectionThread extends Thread {
 	}
 	
 	public void sendAuthentication(boolean isValid) {
-		//TODO
+		//TODO Send packet and update ClientState if necessary.
 	}
 	
 	public void sendGameOverPacket(int wpm) {
-		//TODO
+		//TODO Send packet and update ClientState if necessary.
 	}
 	
 	public void sendBossAttackPacket() {
-		//TODO
+		//TODO Send packet and update ClientState if necessary.
 	}
 	
 	public void sendCostumeChangePacket(int[] costumeIDs) {
@@ -74,11 +74,11 @@ public class ClientConnectionThread extends Thread {
 	}
 	
 	public void sendGameStartPacket() {
-		//TODO
+		//TODO Send packet and update ClientState if necessary.
 	}
 	
 	public void sendGameOverPacket() {
-		//TODO
+		//TODO Send packet and update ClientState if necessary.
 	}
 
 	public Player getPlayer() {
