@@ -82,7 +82,7 @@ public class GameManager extends Thread {
 		//send end game packet
 		int timeElapsed = (int) (System.currentTimeMillis() - startTime) / 1000;
 		for(ClientConnectionThread client : clients) {
-			client.sendGameOverPacket(client.getWordsTyped()/timeElapsed);
+			client.sendGameOverPacket(client.getWordsTyped() / timeElapsed);
 		}
 		networkManager.removeGame(this);	
 	}
@@ -95,26 +95,30 @@ public class GameManager extends Thread {
 		}
 	}
 	
-	public void updateCostume(int clientID, String username, int costumeID) {
-		databaseManager.changeCostumeID(username, costumeID);
-		costumes.set(clientID, costumeID);
+	public void updateCostume(Player sourcePlayer, int costumeID) {
+		databaseManager.changeCostumeID(sourcePlayer.getUsername(), costumeID);
+		costumes.set(sourcePlayer.getId(), costumeID);
 		
-		for(ClientConnectionThread client : clients) {
+		for (ClientConnectionThread client : clients) {
 			client.sendCostumeChangePacket(costumes);
 		}
 	}
 	
-	public void completedWord(int clientID, String username) {
+	public void completedWord(Player sourcePlayer) {
 		
 		String word = databaseManager.getWord();
 		boss.takeDamage(playerAttackDamage);
 		for(ClientConnectionThread client : clients) {
-			client.sendPlayerAttackPacket(boss.getCurrentHealth(), word);
+			client.sendPlayerAttackPacket(boss.getCurrentHealth(), word, sourcePlayer.getId());
 		}
 		//if player attack kills boss, game is over
 		if(boss.getCurrentHealth() <= 0) {
 			gameOver = true;
 		}
+	}
+	
+	public void rejoinQueue(ClientConnectionThread c) {
+		networkManager.rejoinQueue(c);
 	}
 	
 	public Iterable<ClientConnectionThread> getClients() {
@@ -124,4 +128,5 @@ public class GameManager extends Thread {
 	public void sendPacket(String s) {
 		for (ClientConnectionThread c : clients) c.sendPacket(s);
 	}
+	
 }

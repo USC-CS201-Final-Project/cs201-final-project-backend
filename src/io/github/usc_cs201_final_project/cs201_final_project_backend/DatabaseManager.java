@@ -123,7 +123,7 @@ public class DatabaseManager {
 						"Recheck for Existsing Username.");
 		}
 		
-		return null;
+		return 0;
 	}
 	
 	/*

@@ -54,7 +54,6 @@ public class NetworkManager {
 		connections = new ArrayList<>();
 		queue = new LinkedList<>();
 		serverSocket = new ServerSocket(PORT_NUMBER);
-		
 		currentGames = new ArrayList<>();
 		
 	}
@@ -79,7 +78,10 @@ public class NetworkManager {
 	
 	public void removeGame(GameManager gm) {
 		if (! currentGames.remove(gm)) System.out.println("[ERROR] Could not find game in list of current games!");
-		for (ClientConnectionThread c : gm.getClients()) queue.add(c);
+	}
+	
+	public void rejoinQueue(ClientConnectionThread c) {
+		queue.add(c);
 	}
 	
 	//called by clientConnectionThread when creating new acc, checks if username exists, if it does return false
@@ -116,7 +118,11 @@ public class NetworkManager {
 		return db;
 	}
 	
-	public static synchronized String toJsonString(Object o) {
+	public static String toJsonString(Object o) {
 		return gson.toJson(o);
+	}
+	
+	public static Gson getGson() {
+		return gson;
 	}
 }

@@ -4,21 +4,26 @@ public class Player extends Combatant {
 	private String username;
 	private int playerId;
 
-	Player(int pid, int maxHealth,  int costumeId, String username) {
-		super(maxHealth, costumeId);
-		this.setUsername(username);
+	public Player(String username, int costumeId) {
+		super(0, costumeId);
+		this.username = username;
+		playerId = -1;
+	}
+	
+	public void enterGame(int pid, int maxHealth) {
 		playerId = pid;
+		setMaxHealth(maxHealth);
 	}
 
 	public String getUsername() {
 		return username;
 	}
 
-	public void setUsername(String username) {
-		this.username = username;
-	}
-
 	public void changeCostume(int costumeID) {
 		setCostumeID(costumeID);
+	}
+	
+	public int getId() {
+		return playerId;
 	}
 }

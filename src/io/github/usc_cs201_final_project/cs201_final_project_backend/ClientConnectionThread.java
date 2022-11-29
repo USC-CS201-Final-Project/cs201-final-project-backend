@@ -8,8 +8,7 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonIOException;
+import com.google.gson.JsonSyntaxException;
 
 import io.github.usc_cs201_final_project.cs201_final_project_backend.packets.*;
 
@@ -39,7 +38,6 @@ public class ClientConnectionThread extends Thread {
 	public void setGame(GameManager manager, int clientID) {
 		this.manager = manager;
 		this.clientID = clientID;
-		this.clientState = ClientState.InGame;
 	}
 	
 	/**
@@ -50,9 +48,64 @@ public class ClientConnectionThread extends Thread {
 	public void run() {
 		try {
 			while (true) {
-				String line = br.readLine();
-				manager.sendPacket(line);
-				//TODO Instantiate player, process inputs. Joseph will handle this.
+				String p = "";
+				//TODO Make sure that there's exactly one complete packet per line
+				if (br.ready()) p = br.readLine();
+				
+				switch(clientState) {
+					case Authenticating:
+						try {
+							ClientAuthenticationPacket cap = NetworkManager.getGson().fromJson(p, ClientAuthenticationPacket.class);
+							if (cap.isValidFormat()) {
+								
+								boolean valid;
+								if (cap.registering) valid = NetworkManager.createUser(cap.username, cap.password);
+								else valid = NetworkManager.authenticateUser(cap.username, cap.password);
+								
+								sendAuthentication(valid);
+								if (valid) {
+									int costume = NetworkManager.getDBManager().getCostumeID(cap.username);
+									player = new Player(cap.username, costume);
+								}
+							}
+						}
+						catch (JsonSyntaxException e) {
+							System.out.println("JsonSyntaxException in CCT:\n" + p);
+						}
+						
+						break;
+					case Loading:
+						//If loading, we don't expect any packets at all.
+						//  We do nothing with this packet (essentially discarding it)
+						break;
+					case InGame:
+						try {
+							ClientGameplayPacket cgp = NetworkManager.getGson().fromJson(p, ClientGameplayPacket.class);
+							if (cgp.isValidFormat()) {
+								if (cgp.completedWord) manager.completedWord(player);
+								if (cgp.costumeID != player.getCostumeID()) manager.updateCostume(player, cgp.costumeID);
+							}
+							
+						}
+						catch (JsonSyntaxException e) {
+							System.out.println("JsonSyntaxException in CCT:\n" + p);
+						}
+						break;
+					case PostGame:
+						try {
+							ClientPlayAgainPacket cpap = NetworkManager.getGson().fromJson(p, ClientPlayAgainPacket.class);
+							if (cpap.isValidFormat()) {
+								if (cpap.playAgain) {
+									manager.rejoinQueue(this);
+									this.manager = null;
+								}
+							}
+						}
+						catch (JsonSyntaxException e) {
+							System.out.println("JsonSyntaxException in CCT:\n" + p);
+						}
+						break;
+				}
 			}
 		}
 		catch (IOException ioe) {
@@ -62,39 +115,36 @@ public class ClientConnectionThread extends Thread {
 	}
 	
 	public void sendAuthentication(boolean isValid) {
+		if (isValid) clientState = ClientState.Loading;
 		sendPacketObject(new ServerAuthenticationPacket(isValid));
-		
-		if(isValid) {
-			clientState = ClientState.Loading;
-		}
 	}
 	
 	public void sendGameOverPacket(int wpm) {
+		clientState = ClientState.PostGame;
 		sendPacketObject(new ServerGameOverPacket(wpm));
-		
-		clientState = ClientState.PostGame;	
 	}
 	
 	public void sendBossAttackPacket() {
 		//only thing entries that are important are packet id and playerHealth, everything else should be ignored
 		//packetID 0 means BossAttack
-		sendPacketObject(new ServerGameplayPacket(0, -1, player.getCurrentHealth(), "", -1, new ArrayList<Integer>()));
+		sendPacketObject(new ServerGameplayPacket(1, -1, player.getCurrentHealth(), "", -1, new ArrayList<Integer>()));
 		
 	}
 	
 	public void sendCostumeChangePacket(List<Integer> costumeIDs) {
 		//packet ID 1 means CostumeChange
 		//only requires costumeIDs and (maybe) clientID
-		sendPacketObject(new ServerGameplayPacket(1, -1, -1, "", clientID, costumeIDs));
+		sendPacketObject(new ServerGameplayPacket(2, -1, -1, "", clientID, costumeIDs));
 	}
 	
-	public void sendPlayerAttackPacket(int bossHP, String newWord) {
+	public void sendPlayerAttackPacket(int bossHP, String newWord, int playerId) {
 		//packet ID 2 means playerAttack
 		//only requires bossHP, newWord, and playerID
-		sendPacketObject(new ServerGameplayPacket(2, bossHP, -1, newWord, clientID, new ArrayList<Integer>()));
+		sendPacketObject(new ServerGameplayPacket(3, bossHP, -1, newWord, playerId, new ArrayList<Integer>()));
 	}
 	
 	public void sendGameStartPacket(List<String> usernames, int bossHP, List<String> words, List<Integer> costumes) {
+		clientState = ClientState.InGame;
 		//last arg is boss costume id, not sure if still needed
 		sendPacketObject(new ServerGameStartPacket(usernames, player.getMaxHealth(), bossHP, words, costumes, 0)); 
 	}
@@ -104,12 +154,12 @@ public class ClientConnectionThread extends Thread {
 	}
 	
 
-	public void sendPacket(String packet) {
+	public synchronized void sendPacket(String packet) {
 		pw.println(packet);
 		pw.flush();
 	}
 	
-	public void sendPacketObject(Object o) {
+	public synchronized void sendPacketObject(Object o) {
 		pw.println(NetworkManager.toJsonString(o));
 		pw.flush();
 	}
