@@ -11,6 +11,6 @@ public class ClientGameplayPacket extends PacketFormat {
     }
     
     public boolean isValidFormat() {
-    	return isFormatMatch(0);
+    	return isFormatMatch(5) || isFormatMatch(6);
     }
 }
