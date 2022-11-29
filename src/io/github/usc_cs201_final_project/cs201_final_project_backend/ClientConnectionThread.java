@@ -83,7 +83,7 @@ public class ClientConnectionThread extends Thread {
 							ClientGameplayPacket cgp = NetworkManager.getGson().fromJson(p, ClientGameplayPacket.class);
 							if (cgp.isValidFormat()) {
 								if (cgp.completedWord) manager.completedWord(player);
-								if (cgp.costumeID != player.getCostumeID()) manager.updateCostume(player, cgp.costumeID);
+								else if (cgp.costumeID != player.getCostumeID()) manager.updateCostume(player, cgp.costumeID);
 							}
 							
 						}
