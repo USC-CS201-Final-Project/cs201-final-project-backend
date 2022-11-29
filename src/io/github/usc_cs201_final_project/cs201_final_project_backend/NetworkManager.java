@@ -11,7 +11,7 @@ public class NetworkManager {
 	private ArrayList<ClientConnectionThread> connections;
 	private LinkedList<ClientConnectionThread> queue;
 	private ServerSocket serverSocket;
-	private static DatabaseManager db;
+	public static DatabaseManager db;
 	private static int clientCount = 0;
 
 	private ArrayList<GameManager> currentGames;
@@ -66,7 +66,7 @@ public class NetworkManager {
 		queue.add(cli);
 	}
 	
-	public void startNextGame() {
+	public void startNextGame() throws IOException {
 		ArrayList<ClientConnectionThread> players = new ArrayList<>();
 		while (players.size() < PLAYERS_PER_GAME && ! queue.isEmpty()) players.add(queue.poll());
 		GameManager game = new GameManager(players, db);
