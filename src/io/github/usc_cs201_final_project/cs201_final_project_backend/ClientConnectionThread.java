@@ -24,7 +24,6 @@ public class ClientConnectionThread extends Thread {
 	private GameManager manager;
 	private Player player;
 	private int clientID;
-	private Gson gson = new Gson();
 	private int wordsTyped = 0;
 	
 	private ClientState clientState;
