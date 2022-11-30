@@ -7,7 +7,7 @@ import java.util.*;
 import com.google.gson.Gson;
 
 public class NetworkManager {
-	public static final int PLAYERS_PER_GAME = 3;
+	public static final int PLAYERS_PER_GAME = 4;
 	public static final int PORT_NUMBER = 8080;
 	
 	private static DatabaseManager db;
@@ -67,6 +67,7 @@ public class NetworkManager {
 	}
 	
 	public static void startNextGame() throws IOException {
+		//System.out.println("THIS IS BEING RUN");
 		ArrayList<ClientConnectionThread> players = new ArrayList<>();
 		int i = 0;
 		while (players.size() < PLAYERS_PER_GAME && ! queue.isEmpty()) {
@@ -74,13 +75,17 @@ public class NetworkManager {
 			players.add(p);
 			p.getPlayer().enterGame(i++, 60);
 		}
+		//System.out.println("Made past while loop");
 		GameManager game = new GameManager(players, db);
-		game.startGame();
-		currentGames.add(game);
+		//System.out.println("Made it past startGame");
+		//System.out.println("Size of games = " + currentGames.size());
+		if(! currentGames.add(game)) System.out.println("[ERROR] Could not add game to list of current games!");
+		//System.out.println("Size of games = " + currentGames.size());
 	}
 	
 	public static void removeGame(GameManager gm) {
-		if (! currentGames.remove(gm)) System.out.println("[ERROR] Could not find game in list of current games!");
+		//System.out.println("Size of games = " + currentGames.size());
+		if (! currentGames.remove(gm)) System.out.println("[ERROR] Could not find game in list of current games??!");
 	}
 	
 	public static void rejoinQueue(ClientConnectionThread c) throws IOException {

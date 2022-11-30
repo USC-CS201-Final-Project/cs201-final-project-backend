@@ -24,6 +24,7 @@ public class ClientConnectionThread extends Thread {
 	private Player player;
 	private int clientID;
 	private int wordsTyped = 0;
+	private int wpm;
 	
 	private ClientState clientState;
 	
@@ -34,6 +35,7 @@ public class ClientConnectionThread extends Thread {
 		pw = new PrintWriter(connection.getOutputStream());
 		br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
 		this.start();
+		System.out.println("Thread died");
 	}
 	
 	public void setGame(GameManager manager, int clientID) {
@@ -53,6 +55,7 @@ public class ClientConnectionThread extends Thread {
 				System.out.println(clientState);
 				//System.out.println("Awaiting info");
 				//TODO Make sure that there's exactly one complete packet per line
+				//if(br.ready()) p = br.readLine();
 				p = br.readLine();
 				System.out.println(p);
 				if(p=="") continue;
@@ -95,7 +98,7 @@ public class ClientConnectionThread extends Thread {
 									manager.completedWord(player);
 									wordsTyped++;
 								}
-								else if (cgp.costumeID != player.getCostumeID()) manager.updateCostume(player, cgp.costumeID);
+								else if (cgp.costumeID != player.getCostumeID() && cgp.costumeID != -2) manager.updateCostume(player, cgp.costumeID);
 							}
 							
 						}
@@ -105,6 +108,7 @@ public class ClientConnectionThread extends Thread {
 						break;
 					case PostGame:
 						try {
+							sendPacketObject(new ServerGameOverPacket(wpm));
 							ClientPlayAgainPacket cpap = NetworkManager.getGson().fromJson(p, ClientPlayAgainPacket.class);
 							if (cpap.isValidFormat()) {
 								if (cpap.playAgain) {
@@ -134,7 +138,8 @@ public class ClientConnectionThread extends Thread {
 	public void sendGameOverPacket(int wpm) {
 		clientState = ClientState.PostGame;
 		System.out.println(wpm);
-		sendPacketObject(new ServerGameOverPacket(wpm));
+		this.wpm = wpm;
+		//System.out.println("Sent game over packet");
 	}
 	
 	public void sendBossAttackPacket() {
@@ -161,6 +166,7 @@ public class ClientConnectionThread extends Thread {
 		System.out.println("Entering game");
 		//last arg is boss costume id, not sure if still needed
 		sendPacketObject(new ServerGameStartPacket(usernames, player.getMaxHealth(), bossHP, words, costumes, 0)); 
+		System.out.println("Sent packet");
 	}
 
 	public Player getPlayer() {

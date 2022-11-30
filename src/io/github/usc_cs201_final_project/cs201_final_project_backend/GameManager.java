@@ -21,14 +21,14 @@ public class GameManager extends Thread {
 	private static int maxBossHealth = 100;
 	private static int numBosses = 3;
 	private static int playerAttackDamage = 10;
-	private static int bossAttackDamage = 0;
+	private static int bossAttackDamage = 5;
 	
 	GameManager(ArrayList<ClientConnectionThread> clients, DatabaseManager db) throws JsonIOException, IOException {
 		//network managers passes the client threads
 		this.clients = clients;
 		this.databaseManager = db;
 		startGame();
-		this.run();
+		this.start();
 	}
 	
 	/*
