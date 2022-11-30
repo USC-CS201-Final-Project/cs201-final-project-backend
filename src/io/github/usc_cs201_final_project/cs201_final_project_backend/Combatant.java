@@ -16,6 +16,7 @@ public class Combatant {
 	}
 	public void setMaxHealth(int maxHealth) {
 		this.maxHealth = maxHealth;
+		this.currentHealth = maxHealth;
 	}
 	public int getCurrentHealth() {
 		return currentHealth;
