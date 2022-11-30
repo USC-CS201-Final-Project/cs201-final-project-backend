@@ -9,8 +9,9 @@ public class ServerGameStartPacket {
     public List<String> startingWord;
     public List<Integer> startingCostumeID;
     public int bossCostumeID;
+    public int playerID;
 
-    public ServerGameStartPacket(List<String> u, int sph, int sbh, List<String> sw, List<Integer> scid, int bcid)
+    public ServerGameStartPacket(List<String> u, int sph, int sbh, List<String> sw, List<Integer> scid, int bcid, int pid)
     {
         usernames = u;
         startingPlayerHealth = sph;
@@ -18,5 +19,6 @@ public class ServerGameStartPacket {
         startingWord = sw;
         startingCostumeID = scid;
         bossCostumeID = bcid;
+        playerID = pid;
     }
 }

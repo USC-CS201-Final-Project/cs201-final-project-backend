@@ -74,6 +74,7 @@ public class NetworkManager {
 			ClientConnectionThread p = queue.poll();
 			players.add(p);
 			p.getPlayer().enterGame(i++, 60);
+			p.resetWordsTyped();
 		}
 		//System.out.println("Made past while loop");
 		GameManager game = new GameManager(players, db);

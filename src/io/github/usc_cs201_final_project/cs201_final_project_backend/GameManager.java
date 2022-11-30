@@ -95,8 +95,10 @@ public class GameManager extends Thread {
 		}
 	}
 	
-	public void updateCostume(Player sourcePlayer, int costumeID) {
-		databaseManager.changeCostumeID(sourcePlayer.getUsername(), costumeID);
+	public void updateCostume(Player sourcePlayer, int costumeID, boolean isGuest) {
+		if(!isGuest) {
+			databaseManager.changeCostumeID(sourcePlayer.getUsername(), costumeID);
+		}
 		costumes.set(sourcePlayer.getId(), costumeID);
 		System.out.println("Sending out costumes");
 		for (ClientConnectionThread client : clients) {

@@ -25,6 +25,7 @@ public class ClientConnectionThread extends Thread {
 	private int clientID;
 	private int wordsTyped = 0;
 	private int wpm;
+	private boolean isGuest = false;
 	
 	private ClientState clientState;
 	
@@ -68,14 +69,20 @@ public class ClientConnectionThread extends Thread {
 							if (cap.isValidFormat()) {
 								
 								boolean valid;
-								if(cap.isGuest) valid = NetworkManager.authenticateUser("test", "test");
+								if(cap.isGuest) {
+									valid = true;
+									isGuest = false;
+								}
 								else if (cap.registering) valid = NetworkManager.createUser(cap.username, cap.password);
 								else valid = NetworkManager.authenticateUser(cap.username, cap.password);
 								
 								sendAuthentication(valid);
 								if (valid) {
-									int costume = NetworkManager.getDBManager().getCostumeID(cap.username);
-									player = new Player(cap.username, costume);
+									if(isGuest) player = new Player("guest", 0);
+									else {
+										int costume = NetworkManager.getDBManager().getCostumeID(cap.username);
+										player = new Player(cap.username, costume);
+									}
 									NetworkManager.rejoinQueue(this);
 								}
 							}
@@ -98,7 +105,7 @@ public class ClientConnectionThread extends Thread {
 									manager.completedWord(player);
 									wordsTyped++;
 								}
-								else if (cgp.costumeID != player.getCostumeID() && cgp.costumeID != -2) manager.updateCostume(player, cgp.costumeID);
+								else if (cgp.costumeID != player.getCostumeID() && cgp.costumeID != -2) manager.updateCostume(player, cgp.costumeID, isGuest);
 							}
 							
 						}
@@ -112,8 +119,8 @@ public class ClientConnectionThread extends Thread {
 							ClientPlayAgainPacket cpap = NetworkManager.getGson().fromJson(p, ClientPlayAgainPacket.class);
 							if (cpap.isValidFormat()) {
 								if (cpap.playAgain) {
-									NetworkManager.rejoinQueue(this);
 									this.manager = null;
+									NetworkManager.rejoinQueue(this);
 								}
 							}
 						}
@@ -165,7 +172,7 @@ public class ClientConnectionThread extends Thread {
 		clientState = ClientState.InGame;
 		System.out.println("Entering game");
 		//last arg is boss costume id, not sure if still needed
-		sendPacketObject(new ServerGameStartPacket(usernames, player.getMaxHealth(), bossHP, words, costumes, 0)); 
+		sendPacketObject(new ServerGameStartPacket(usernames, player.getMaxHealth(), bossHP, words, costumes, 0, player.getId())); 
 		System.out.println("Sent packet");
 	}
 
@@ -186,6 +193,10 @@ public class ClientConnectionThread extends Thread {
 	
 	public int getWordsTyped() {
 		return wordsTyped;
+	}
+	
+	public void resetWordsTyped() {
+		wordsTyped = 0;
 	}
 
 	private enum ClientState {
