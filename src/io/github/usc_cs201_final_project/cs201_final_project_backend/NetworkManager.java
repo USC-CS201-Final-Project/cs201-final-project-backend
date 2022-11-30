@@ -7,15 +7,15 @@ import java.util.*;
 import com.google.gson.Gson;
 
 public class NetworkManager {
-	public static final int PLAYERS_PER_GAME = 4;
-	public static final int PORT_NUMBER = 20100;
+	public static final int PLAYERS_PER_GAME = 3;
+	public static final int PORT_NUMBER = 8080;
 	
 	private static DatabaseManager db;
 	private static Gson gson;
 	
-	private ArrayList<GameManager> currentGames;
+	private static ArrayList<GameManager> currentGames;
 	private ArrayList<ClientConnectionThread> connections;
-	private LinkedList<ClientConnectionThread> queue;
+	private static LinkedList<ClientConnectionThread> queue;
 	private ServerSocket serverSocket;
 
 	
@@ -37,11 +37,9 @@ public class NetworkManager {
 		
 		while (true) {
 			try {
+				//System.out.println("Awaiting Client");
 				n.awaitClient();
-				if (n.getPlayersInQueue() >= PLAYERS_PER_GAME) {
-					System.out.println("[LOG] Starting new game.");
-					n.startNextGame();
-				}
+				//System.out.println("Client Received");
 			} catch (IOException e) {
 				System.out.println("[ERROR] Could not await next client:");
 				e.printStackTrace();
@@ -58,30 +56,39 @@ public class NetworkManager {
 		
 	}
 	
-	public int getPlayersInQueue() {
+	public static int getPlayersInQueue() {
 		return queue.size();
 	}
 	
 	public void awaitClient() throws IOException {
 		ClientConnectionThread cli = new ClientConnectionThread(serverSocket.accept());
 		connections.add(cli);
-		queue.add(cli);
+		//queue.add(cli);
 	}
 	
-	public void startNextGame() throws IOException {
+	public static void startNextGame() throws IOException {
 		ArrayList<ClientConnectionThread> players = new ArrayList<>();
-		while (players.size() < PLAYERS_PER_GAME && ! queue.isEmpty()) players.add(queue.poll());
-		GameManager game = new GameManager(players, db, this);
+		int i = 0;
+		while (players.size() < PLAYERS_PER_GAME && ! queue.isEmpty()) {
+			ClientConnectionThread p = queue.poll();
+			players.add(p);
+			p.getPlayer().enterGame(i++, 60);
+		}
+		GameManager game = new GameManager(players, db);
 		game.startGame();
 		currentGames.add(game);
 	}
 	
-	public void removeGame(GameManager gm) {
+	public static void removeGame(GameManager gm) {
 		if (! currentGames.remove(gm)) System.out.println("[ERROR] Could not find game in list of current games!");
 	}
 	
-	public void rejoinQueue(ClientConnectionThread c) {
+	public static void rejoinQueue(ClientConnectionThread c) throws IOException {
 		queue.add(c);
+		if (getPlayersInQueue() >= PLAYERS_PER_GAME) {
+			System.out.println("[LOG] Starting new game.");
+			startNextGame();
+		}
 	}
 	
 	//called by clientConnectionThread when creating new acc, checks if username exists, if it does return false

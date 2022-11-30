@@ -5,7 +5,7 @@ public class Player extends Combatant {
 	private int playerId;
 
 	public Player(String username, int costumeId) {
-		super(0, costumeId);
+		super(60, costumeId);
 		this.username = username;
 		playerId = -1;
 	}

@@ -13,7 +13,7 @@ public class GameManager extends Thread {
 	private List<Integer> costumes = new ArrayList<Integer>();
 
 	private DatabaseManager databaseManager;
-	private NetworkManager networkManager;
+
 	private long startTime;
 	private int numAttacks = 0;
 	private boolean gameOver = false;
@@ -21,13 +21,12 @@ public class GameManager extends Thread {
 	private static int maxBossHealth = 100;
 	private static int numBosses = 3;
 	private static int playerAttackDamage = 10;
-	private static int bossAttackDamage = 5;
+	private static int bossAttackDamage = 0;
 	
-	GameManager(ArrayList<ClientConnectionThread> clients, DatabaseManager db, NetworkManager nm) throws JsonIOException, IOException {
+	GameManager(ArrayList<ClientConnectionThread> clients, DatabaseManager db) throws JsonIOException, IOException {
 		//network managers passes the client threads
 		this.clients = clients;
 		this.databaseManager = db;
-		this.networkManager = nm;
 		startGame();
 		this.run();
 	}
@@ -77,14 +76,15 @@ public class GameManager extends Thread {
 						gameOver = true;
 					}
 				}
+				numAttacks++;
 			}
 		}
 		//send end game packet
 		int timeElapsed = (int) (System.currentTimeMillis() - startTime) / 1000;
 		for(ClientConnectionThread client : clients) {
-			client.sendGameOverPacket(client.getWordsTyped() / timeElapsed);
+			client.sendGameOverPacket((int)((float)client.getWordsTyped()*60 / (float)timeElapsed));
 		}
-		networkManager.removeGame(this);	
+		NetworkManager.removeGame(this);	
 	}
 	
 	public void broadcastStart(List<String> usernames, List<String> words, List<Integer> costumes) throws JsonIOException, IOException {
@@ -98,7 +98,7 @@ public class GameManager extends Thread {
 	public void updateCostume(Player sourcePlayer, int costumeID) {
 		databaseManager.changeCostumeID(sourcePlayer.getUsername(), costumeID);
 		costumes.set(sourcePlayer.getId(), costumeID);
-		
+		System.out.println("Sending out costumes");
 		for (ClientConnectionThread client : clients) {
 			client.sendCostumeChangePacket(costumes);
 		}
@@ -106,6 +106,7 @@ public class GameManager extends Thread {
 	
 	public void completedWord(Player sourcePlayer) {
 		
+		System.out.println("Sending out attack");
 		String word = databaseManager.getWord();
 		boss.takeDamage(playerAttackDamage);
 		for(ClientConnectionThread client : clients) {
@@ -115,10 +116,6 @@ public class GameManager extends Thread {
 		if(boss.getCurrentHealth() <= 0) {
 			gameOver = true;
 		}
-	}
-	
-	public void rejoinQueue(ClientConnectionThread c) {
-		networkManager.rejoinQueue(c);
 	}
 	
 	public Iterable<ClientConnectionThread> getClients() {

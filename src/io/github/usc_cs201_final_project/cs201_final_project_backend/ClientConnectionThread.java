@@ -33,6 +33,7 @@ public class ClientConnectionThread extends Thread {
 		
 		pw = new PrintWriter(connection.getOutputStream());
 		br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+		this.start();
 	}
 	
 	public void setGame(GameManager manager, int clientID) {
@@ -49,9 +50,14 @@ public class ClientConnectionThread extends Thread {
 		try {
 			while (true) {
 				String p = "";
+				System.out.println(clientState);
+				//System.out.println("Awaiting info");
 				//TODO Make sure that there's exactly one complete packet per line
-				if (br.ready()) p = br.readLine();
-				
+				p = br.readLine();
+				System.out.println(p);
+				if(p=="") continue;
+				if(p==null) return;
+				//if(p==null&&(clientState==ClientState.PostGame||clientState==ClientState.PostGame)) return;
 				switch(clientState) {
 					case Authenticating:
 						try {
@@ -59,13 +65,15 @@ public class ClientConnectionThread extends Thread {
 							if (cap.isValidFormat()) {
 								
 								boolean valid;
-								if (cap.registering) valid = NetworkManager.createUser(cap.username, cap.password);
+								if(cap.isGuest) valid = NetworkManager.authenticateUser("test", "test");
+								else if (cap.registering) valid = NetworkManager.createUser(cap.username, cap.password);
 								else valid = NetworkManager.authenticateUser(cap.username, cap.password);
 								
 								sendAuthentication(valid);
 								if (valid) {
 									int costume = NetworkManager.getDBManager().getCostumeID(cap.username);
 									player = new Player(cap.username, costume);
+									NetworkManager.rejoinQueue(this);
 								}
 							}
 						}
@@ -82,7 +90,11 @@ public class ClientConnectionThread extends Thread {
 						try {
 							ClientGameplayPacket cgp = NetworkManager.getGson().fromJson(p, ClientGameplayPacket.class);
 							if (cgp.isValidFormat()) {
-								if (cgp.completedWord) manager.completedWord(player);
+								if (cgp.completedWord) 
+								{
+									manager.completedWord(player);
+									wordsTyped++;
+								}
 								else if (cgp.costumeID != player.getCostumeID()) manager.updateCostume(player, cgp.costumeID);
 							}
 							
@@ -96,7 +108,7 @@ public class ClientConnectionThread extends Thread {
 							ClientPlayAgainPacket cpap = NetworkManager.getGson().fromJson(p, ClientPlayAgainPacket.class);
 							if (cpap.isValidFormat()) {
 								if (cpap.playAgain) {
-									manager.rejoinQueue(this);
+									NetworkManager.rejoinQueue(this);
 									this.manager = null;
 								}
 							}
@@ -121,6 +133,7 @@ public class ClientConnectionThread extends Thread {
 	
 	public void sendGameOverPacket(int wpm) {
 		clientState = ClientState.PostGame;
+		System.out.println(wpm);
 		sendPacketObject(new ServerGameOverPacket(wpm));
 	}
 	
@@ -145,6 +158,7 @@ public class ClientConnectionThread extends Thread {
 	
 	public void sendGameStartPacket(List<String> usernames, int bossHP, List<String> words, List<Integer> costumes) {
 		clientState = ClientState.InGame;
+		System.out.println("Entering game");
 		//last arg is boss costume id, not sure if still needed
 		sendPacketObject(new ServerGameStartPacket(usernames, player.getMaxHealth(), bossHP, words, costumes, 0)); 
 	}
