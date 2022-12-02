@@ -108,8 +108,8 @@ public class NetworkManager {
 		}
 		else
 		{
-			db.createUser(username, password);
-			return true;
+			
+			return db.createUser(username, password);
 		}
 		
 	}
@@ -118,8 +118,8 @@ public class NetworkManager {
 	{
 		if(db.userExists(username))
 		{
-			db.authenticateUser(username, password);
-			return true;
+			
+			return db.authenticateUser(username, password);
 		}
 		else
 		{

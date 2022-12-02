@@ -201,13 +201,16 @@ public class DatabaseManager {
 				expName = rs.getString("UserName");
 				expPassword = rs.getString("Password");
 			}
+			System.out.println(expName);
+			System.out.println(expPassword);
 
 			if(username.equals(expName)) {
 				if(password.equals(expPassword)) {
+					System.out.println("Authenticated");
 					return true;
 				}
 			}
-			
+			System.out.println("Not Authenticated");
 			return false;
 			
 		} catch (SQLException sqle) {
